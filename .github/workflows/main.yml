@@ -11,9 +11,11 @@ on:
     branches: [ "main" ]
 
 env:
-  AWS_REGION: "eu-central-1"
+  AWS_REGION: "eu-north-1"
   AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
   AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+  AWS_PROD_JOB_PATH: ${{secrets.AWS_PROD_JOB_PATH}}
+  AWS_DEV_JOB_PATH: ${{secrets.AWS_DEV_JOB_PATH}}
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -23,7 +25,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: export aws values
+        run: |
+          export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
+          export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
+          export AWS_REGION="$AWS_REGION"
       - name: deploy s3 script
         run: |
-          pwd
-          ls
+          aws s3 sync prod_preprocess_data/ "$AWS_PROD_JOB_PATH"/prod_preprocess_data/
+          aws s3 sync prod_validate_data/ "$AWS_PROD_JOB_PATH"/prod_validate_data/
+          aws s3 sync prod_aggregate_data/ "$AWS_PROD_JOB_PATH"/prod_aggregate_data/
+          aws s3 sync prod_load_data/ "$AWS_PROD_JOB_PATH"/prod_load_data/
