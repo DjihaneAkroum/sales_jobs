@@ -22,6 +22,10 @@ def init_spark():
         .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
         .config('spark.hadoop.fs.s3a.aws.credentials.provider', 'org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider') \
         .config('spark.jars.packages', 'org.apache.hadoop:hadoop-aws:3.2.1') \
+        .config("spark.jars.packages",
+                "net.snowflake:snowflake-jdbc-3.13.11,net.snowflake:spark-snowflake_2.12-2.9.0-spark_3.5") \
+        .config("spark.driver.extraClassPath","snowflake-jdbc-3.13.11.jar:spark-snowflake_2.12-2.12.0-spark_3.5.jar") \
+        .config("spark.executor.extraClassPath","snowflake-jdbc-3.13.11.jar:spark-snowflake_2.12-2.12.0-spark_3.5.jar")\
         .getOrCreate()
 
     return spark
@@ -54,8 +58,8 @@ def write_data_to_snowflake(salesDF, database, schema, table_name):
         "sfPassword": os.getenv("snowflake_password"),
         "sfDatabase": database,
         "sfSchema": schema,
-        "sfRole": "ACCOUNTADMIN",
-        "sfWarehouse": "COMPUTE_WH",
+        "sfRole": "TEST",
+        "sfWarehouse": "BI_ANALYTICS",
         "truncate_table": "on",
         "usestagingtable": "off"
     }

@@ -71,7 +71,7 @@ def get_sales_by_product(salesDF):
 
 def get_returns_by_product(salesDF):
     return_rate_by_product = salesDF.groupBy("product_sku").agg(
-        sum(when(col("is_returned") == True, 1).otherwise(0)).alias("returns"),
+        sum(when(col("is_returned"), 1).otherwise(0)).alias("returns"),
         count("pkid_invoice").alias("total_orders")
     ).withColumn("return_rate", col("returns") / col("total_orders"))
     return return_rate_by_product
