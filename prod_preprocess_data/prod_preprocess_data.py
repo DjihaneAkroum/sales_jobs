@@ -58,7 +58,8 @@ def preprocess_data(salesDF):
         when(col("OrderPriority") == lit("Low"), lit(1)) \
             .when(col("OrderPriority") == lit("Medium"), lit(2)) \
             .when(col("OrderPriority") == lit("High"), lit(3)) \
-            .otherwise(lit(-1)).alias("order_priority")
+            .otherwise(lit(-1)).alias("order_priority"),
+        ((col("UnitPrice") * col("Quantity"))*col("Discount") + col("ShippingCost")).alias("total_cost_invoice")
     )
 
     return preprocessedData

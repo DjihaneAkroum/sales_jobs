@@ -4,12 +4,10 @@ import logging as logger
 from pyspark.sql.types import *
 from pyspark.sql.functions import *
 from pyspark import StorageLevel
-from datetime import datetime
 
 AWS_BUCKET = "prod-datalake-tanf"
-AWS_INPUT_DATA = "silver/preprocessed/online_sales_dataset"
-AWS_OUTPUT_DATA = "silver/processed/online_sales_dataset"
-AWS_OUTPUT_ERRORS = "wrong_data/online_sales_dataset"
+AWS_INPUT_DATA = "silver/processed/online_sales_dataset"
+AWS_OUTPUT_DATA = "gold/online_sales_dataset"
 
 
 def init_spark():
@@ -38,6 +36,46 @@ def read_data(spark):
     salesDF.persist(StorageLevel.MEMORY_AND_DISK)
     return salesDF
 
+def get_total_sales_by_category(salesDF):
+    # Total sales by category
+    total_sales_category = salesDF.groupBy("category").agg(
+        sum("total_cost_invoice").alias("total_sales"),
+        sum("quantity").alias("total_quantity")
+    )
+    return total_sales_category
+
+def get_avg_order_by_customer(salesDF):
+    avg_order_value_customer = salesDF.groupBy("fkid_customer").agg(
+        avg("total_cost_invoice").alias("avg_order_value"),
+        count("pkid_invoice").alias("num_orders"),
+        sum("total_cost_invoice").alias("total_revenue")
+    )
+    return avg_order_value_customer
+
+def get_sales_by_month(salesDF):
+    # Sales by month/year (extracting month and year from date_of_invoice)
+    sales_by_month = salesDF.withColumn("month", month("date_of_invoice")) \
+        .withColumn("year", year("date_of_invoice")) \
+        .groupBy("year", "month").agg(
+        sum("total_cost_invoice").alias("monthly_sales"),
+        avg("total_cost_invoice").alias("avg_order_value")
+    )
+    return sales_by_month
+
+def get_sales_by_product(salesDF):
+    sales_by_product = salesDF.groupBy("product_sku").agg(
+        sum("quantity").alias("total_quantity_sold"),
+        sum("total_cost_invoice").alias("total_sales")
+    )
+    return sales_by_product
+
+def get_returns_by_product(salesDF):
+    returns_by_product = salesDF.groupBy("product_sku").agg(
+        sum("quantity").alias("total_quantity_sold"),
+        sum("total_cost_invoice").alias("total_sales")
+    )
+    return returns_by_product
+
 def write_data(salesDF, prefix):
     path = f"s3a://{AWS_BUCKET}/{prefix}"
     logger.info(f"Writing sales dataframe data to {path}")
@@ -47,10 +85,21 @@ def write_data(salesDF, prefix):
 def main():
     spark = init_spark()
     salesDF = read_data(spark)
-    data_date = datetime.now().strftime('%y-%m-%d')
-    unified_invoice_ids = validate_data(salesDF, data_date)
-    valid_data = filter_out_non_valid_data(salesDF, unified_invoice_ids)
-    write_data(valid_data, AWS_OUTPUT_DATA)
+
+    total_sales_by_category = get_total_sales_by_category(salesDF)
+    write_data(total_sales_by_category, f"{AWS_OUTPUT_DATA}/total_sales_by_category")
+
+    avg_order_by_customer = get_avg_order_by_customer(salesDF)
+    write_data(avg_order_by_customer, f"{AWS_OUTPUT_DATA}/avg_order_by_customer")
+
+    sales_by_month = get_sales_by_month(salesDF)
+    write_data(sales_by_month, f"{AWS_OUTPUT_DATA}/sales_by_month")
+
+    sales_by_product = get_sales_by_product(salesDF)
+    write_data(sales_by_product, f"{AWS_OUTPUT_DATA}/sales_by_product")
+
+    returns_by_product = get_returns_by_product(salesDF)
+    write_data(returns_by_product, f"{AWS_OUTPUT_DATA}/returns_by_product")
 
 
 if __name__ == "__main__":
