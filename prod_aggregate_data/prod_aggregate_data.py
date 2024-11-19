@@ -70,11 +70,11 @@ def get_sales_by_product(salesDF):
     return sales_by_product
 
 def get_returns_by_product(salesDF):
-    returns_by_product = salesDF.groupBy("product_sku").agg(
-        sum("quantity").alias("total_quantity_sold"),
-        sum("total_cost_invoice").alias("total_sales")
-    )
-    return returns_by_product
+    return_rate_by_product = salesDF.groupBy("product_sku").agg(
+        sum(when(col("is_returned") == True, 1).otherwise(0)).alias("returns"),
+        count("pkid_invoice").alias("total_orders")
+    ).withColumn("return_rate", col("returns") / col("total_orders"))
+    return return_rate_by_product
 
 def write_data(salesDF, prefix):
     path = f"s3a://{AWS_BUCKET}/{prefix}"

@@ -64,10 +64,24 @@ def write_data_to_snowflake(salesDF, database, schema, table_name):
 
 def main():
     spark = init_spark()
-    silver_salesDF = read_data(spark)
-    gold_salesDF = read_data(spark)
+
+    silver_salesDF = read_data(spark, f"{AWS_INPUT_SILVER_DATA}")
     write_data_to_snowflake(silver_salesDF, "sales", "sales", "invoices")
-    write_data_to_snowflake(gold_salesDF, "sales", "insights", "invoices")
+
+    total_sales_by_category = read_data(spark, f"{AWS_INPUT_GOLD_DATA}/total_sales_by_category")
+    write_data_to_snowflake(total_sales_by_category, "sales", "insights", "total_sales_by_category")
+
+    avg_order_by_customer = read_data(spark, f"{AWS_INPUT_GOLD_DATA}/avg_order_by_customer")
+    write_data_to_snowflake(avg_order_by_customer, "sales", "insights", "avg_order_by_customer")
+
+    sales_by_month = read_data(spark, f"{AWS_INPUT_GOLD_DATA}/sales_by_month")
+    write_data_to_snowflake(sales_by_month, "sales", "insights", "sales_by_month")
+
+    sales_by_product = read_data(spark, f"{AWS_INPUT_GOLD_DATA}/sales_by_product")
+    write_data_to_snowflake(sales_by_product, "sales", "insights", "sales_by_product")
+
+    returns_by_product = read_data(spark, f"{AWS_INPUT_GOLD_DATA}/returns_by_product")
+    write_data_to_snowflake(returns_by_product, "sales", "insights", "returns_by_product")
 
 
 if __name__ == "__main__":
