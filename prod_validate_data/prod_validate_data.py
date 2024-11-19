@@ -53,11 +53,11 @@ def get_duplicated_invoice_id(salesDF, data_date):
 # Check for negative values in relevant columns
 def get_negative_values(salesDF, data_date):
     """
-    Identify rows with negative values in `quantity`, `unit_price`, `percentage_discount`, and `shipping_cost`.
+    Identify rows with negative values in `quantity`, `unity_price`, `percentage_discount`, and `shipping_cost`.
     """
     negative_rows = salesDF.filter(
         (col("quantity") < 0) |
-        (col("unit_price") < 0) |
+        (col("unity_price") < 0) |
         (col("percentage_discount") < 0) |
         (col("shipping_cost") < 0)
     )
@@ -115,7 +115,7 @@ def validate_logical_consistency(salesDF, data_date):
 
 
 def validate_dates(salesDF, data_date):
-    invalid_dates = salesDF.filter(col("date_of_invoice") > datetime.current_date())
+    invalid_dates = salesDF.filter(col("date_of_invoice") > datetime.now())
     prefix = f"{AWS_OUTPUT_ERRORS}/{data_date}/unvalid_dates"
     write_data(invalid_dates, prefix)
     return invalid_dates.select(col("pkid_invoice").alias("pkid_invoice_unvalid"))
